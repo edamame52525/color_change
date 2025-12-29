@@ -18,8 +18,8 @@ const PRESET_COLORS = [
 function App() {
   // 選択された色のIDを管理（4〜8種類まで選択可能）
   const [selectedColors, setSelectedColors] = useState([1, 2])
-  // 現在表示中の色のインデックス
-  const [currentColorIndex, setCurrentColorIndex] = useState(0)
+  // 現在表示中の色のID
+  const [currentColorId, setCurrentColorId] = useState(null)
   // 一時停止状態
   const [isPaused, setIsPaused] = useState(false)
   // スライダーの値（速度：7000ms〜1000ms、デフォルト4000ms）
@@ -35,10 +35,14 @@ function App() {
     selectedColors.includes(color.id)
   )
 
-  // 選択された色が変更されたときにインデックスをリセット
+  // 選択された色が変更されたときに色をリセット
   useEffect(() => {
     if (selectedColorsArray.length > 0) {
-      setCurrentColorIndex(0)
+      // 最初の色をランダムに選択
+      const randomIndex = Math.floor(Math.random() * selectedColorsArray.length)
+      setCurrentColorId(selectedColorsArray[randomIndex].id)
+    } else {
+      setCurrentColorId(null)
     }
   }, [selectedColors])
 
@@ -67,11 +71,26 @@ function App() {
       clearInterval(intervalRef.current)
     }
 
+    // ランダムに色を選択する関数（前回の色を除外）
+    const getRandomColor = (previousColorId) => {
+      if (selectedColorsArray.length === 0) return null
+      if (selectedColorsArray.length === 1) return selectedColorsArray[0].id
+      
+      // 前回の色を除外した配列を作成
+      const availableColors = selectedColorsArray.filter(
+        color => color.id !== previousColorId
+      )
+      
+      // 除外後の配列からランダムに選択
+      const randomIndex = Math.floor(Math.random() * availableColors.length)
+      return availableColors[randomIndex].id
+    }
+
     // 新しいインターバルを設定
     intervalRef.current = setInterval(() => {
-      setCurrentColorIndex(prevIndex => {
-        // 次の色のインデックスを計算（循環）
-        return (prevIndex + 1) % selectedColorsArray.length
+      setCurrentColorId(prevColorId => {
+        // ランダムに次の色を選択（前回の色を除外）
+        return getRandomColor(prevColorId)
       })
     }, speedInMs)
 
@@ -110,7 +129,7 @@ function App() {
   }
 
   // 現在表示中の色を取得
-  const currentColor = selectedColorsArray[currentColorIndex] || selectedColorsArray[0]
+  const currentColor = selectedColorsArray.find(color => color.id === currentColorId) || selectedColorsArray[0]
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-4">
